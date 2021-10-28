@@ -32,9 +32,9 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.core.MediaTypeMap;
-import org.jboss.resteasy.microprofile.config.FilterConfigSourceImpl;
-import org.jboss.resteasy.microprofile.config.ServletConfigSourceImpl;
-import org.jboss.resteasy.microprofile.config.ServletContextConfigSourceImpl;
+import org.jboss.resteasy.microprofile.config.FilterConfigSource;
+import org.jboss.resteasy.microprofile.config.ServletConfigSource;
+import org.jboss.resteasy.microprofile.config.ServletContextConfigSource;
 import org.jboss.resteasy.plugins.interceptors.AcceptEncodingGZIPFilter;
 import org.jboss.resteasy.plugins.interceptors.GZIPDecodingInterceptor;
 import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
@@ -59,6 +59,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.resteasy.common.runtime.ResteasyInjectorFactoryRecorder;
 import io.quarkus.resteasy.common.runtime.config.ResteasyConfigSourceProvider;
+import io.quarkus.resteasy.common.runtime.graal.ServletMissing;
 import io.quarkus.resteasy.common.runtime.providers.ServerFormUrlEncodedProvider;
 import io.quarkus.resteasy.common.spi.ResteasyConfigBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
@@ -137,10 +138,12 @@ public class ResteasyCommonProcessor {
         initConfigSourceProvider.produce(
                 new StaticInitConfigSourceProviderBuildItem(ResteasyConfigSourceProvider.class.getName()));
 
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
-                ServletConfigSourceImpl.class,
-                ServletContextConfigSourceImpl.class,
-                FilterConfigSourceImpl.class));
+        if (!new ServletMissing().getAsBoolean()) {
+            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
+                    ServletConfigSource.class,
+                    ServletContextConfigSource.class,
+                    FilterConfigSource.class));
+        }
     }
 
     @BuildStep

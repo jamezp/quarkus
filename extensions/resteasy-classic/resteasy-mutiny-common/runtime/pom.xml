@@ -41,6 +41,13 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-apache-httpclient</artifactId>
         </dependency>
+        <!-- This seems to be required by tests because of the org.jboss.resteasy.microprofile.config.ServletConfigSource
+             this is likely getting on the class path via quarkus-resteasy-common -->
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>

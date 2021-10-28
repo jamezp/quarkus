@@ -23,7 +23,9 @@ import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivilegedAction;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -31,7 +33,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import javax.enterprise.inject.spi.BeanManager;
@@ -64,6 +65,8 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.engines.PassthroughTrustManager;
 import org.jboss.resteasy.client.jaxrs.engines.URLConnectionClientEngineBuilder;
 import org.jboss.resteasy.client.jaxrs.internal.LocalResteasyProviderFactory;
+import org.jboss.resteasy.concurrent.ContextualExecutorService;
+import org.jboss.resteasy.concurrent.ContextualExecutors;
 import org.jboss.resteasy.microprofile.client.ConfigurationWrapper;
 import org.jboss.resteasy.microprofile.client.DefaultMediaTypeFilter;
 import org.jboss.resteasy.microprofile.client.DefaultResponseExceptionMapper;
@@ -73,6 +76,7 @@ import org.jboss.resteasy.microprofile.client.ProxyInvocationHandler;
 import org.jboss.resteasy.microprofile.client.RestClientListeners;
 import org.jboss.resteasy.microprofile.client.RestClientProxy;
 import org.jboss.resteasy.microprofile.client.async.AsyncInterceptorRxInvokerProvider;
+import org.jboss.resteasy.microprofile.client.async.AsyncInvocationInterceptorThreadContext;
 import org.jboss.resteasy.microprofile.client.header.ClientHeaderProviders;
 import org.jboss.resteasy.microprofile.client.header.ClientHeadersRequestFilter;
 import org.jboss.resteasy.microprofile.client.impl.MpClient;
@@ -225,7 +229,7 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
         if (executor == null) {
             throw new IllegalArgumentException("ExecutorService must not be null");
         }
-        executorService = executor;
+        executorService = ContextualExecutors.wrap(executor);
         return this;
     }
 
@@ -288,7 +292,7 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
         if (this.executorService != null) {
             resteasyClientBuilder.executorService(this.executorService);
         } else {
-            this.executorService = Executors.newCachedThreadPool();
+            this.executorService = ContextualExecutors.threadPool();
             resteasyClientBuilder.executorService(executorService, true);
         }
 
@@ -319,6 +323,9 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
             resteasyClientBuilder.sslContext(null);
             resteasyClientBuilder.trustStore(null);
             resteasyClientBuilder.keyStore(null, "");
+        }
+        if (!invocationInterceptorFactories.isEmpty()) {
+            resteasyClientBuilder.register(new AsyncInvocationInterceptorThreadContext(invocationInterceptorFactories));
         }
 
         configureTrustAll(resteasyClientBuilder);
@@ -672,7 +679,7 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
         } else if (o instanceof ParamConverterProvider) {
             register(o, Priorities.USER);
         } else if (o instanceof AsyncInvocationInterceptorFactory) {
-            builderDelegate.asyncInterceptorFactories.add((AsyncInvocationInterceptorFactory) o);
+            invocationInterceptorFactories.add((AsyncInvocationInterceptorFactory) o);
         } else {
             builderDelegate.register(o);
         }
@@ -704,7 +711,7 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
             builderDelegate.register(converter, i);
 
         } else if (o instanceof AsyncInvocationInterceptorFactory) {
-            builderDelegate.asyncInterceptorFactories.add((AsyncInvocationInterceptorFactory) o);
+            invocationInterceptorFactories.add((AsyncInvocationInterceptorFactory) o);
         } else {
             builderDelegate.register(o, i);
         }
@@ -790,7 +797,7 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
 
     private Config config;
 
-    private ExecutorService executorService;
+    private ContextualExecutorService executorService;
 
     private URI baseURI;
 
@@ -813,4 +820,5 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
     private QueryParamStyle queryParamStyle = null;
 
     private Set<Object> localProviderInstances = new HashSet<>();
+    private final Collection<AsyncInvocationInterceptorFactory> invocationInterceptorFactories = new ArrayList<>();
 }

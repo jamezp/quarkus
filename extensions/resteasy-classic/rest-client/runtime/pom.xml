@@ -35,8 +35,8 @@
             <artifactId>quarkus-rest-client-config</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-client-microprofile</artifactId>
+            <groupId>org.jboss.resteasy.microprofile</groupId>
+            <artifactId>microprofile-rest-client</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>org.jboss.spec.javax.interceptor</groupId>
@@ -49,6 +49,10 @@
                     <artifactId>weld-api</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.resteasy.microprofile</groupId>
+            <artifactId>microprofile-config</artifactId>
         </dependency>
         <dependency>
             <groupId>jakarta.interceptor</groupId>
